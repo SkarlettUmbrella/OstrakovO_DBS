@@ -91,3 +91,57 @@ def patches (request):
 
     return JsonResponse(dictionary)
 
+def matches (request, id):
+
+    conn = psycopg2.connect(
+        database=os.environ.get('DBS_NAME'),
+        user=os.environ.get('DBS_USERNAME'),
+        host=os.environ.get('DBS_HOST'),
+        password=os.environ.get('DBS_PASSWORD'),
+        port=os.environ.get('DBS_PORT'),
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM (SELECT p.*, items.name, ROW_NUMBER() OVER (PARTITION BY localized_name ORDER BY p.count DESC) rn FROM (SELECT mpd.id, mpd.mpd_id, mpd.hero_id, pl.item_id, COUNT(pl.item_id) as count, heroes.localized_name from purchase_logs pl, heroes, (SELECT matches.id, mpd.id as mpd_id, mpd.hero_id FROM matches, (SELECT CASE WHEN matches.radiant_win = true THEN 5 ELSE 132 END AS max, CASE WHEN matches.radiant_win = true THEN 0 ELSE 128 END AS min FROM matches WHERE matches.id = " + str(id) + " ) AS range, matches_players_details as mpd WHERE mpd.match_id = matches.id AND player_slot >= range.min AND player_slot < range.max AND matches.id = " + str(id) + ") as mpd WHERE pl.match_player_detail_id = mpd.mpd_id AND heroes.id = mpd.hero_id GROUP BY mpd.mpd_id, mpd.hero_id, pl.item_id, heroes.localized_name, mpd.id ORDER BY hero_id, count DESC) as p, items WHERE items.id = p.item_id ORDER BY p.hero_id, p.count DESC, items.name DESC) as pp WHERE pp.rn <= 5")
+    result_match = cursor.fetchall()
+
+    dict = {"id": id}
+    heroes = []
+    for i in range(5):
+        hero_id = result_match[i*5][2]
+        hero_name = result_match[i*5][5]
+        item_dict = []
+        for j in range(5):
+            item_dict.append({"id": result_match[i*5+j][3], "name": result_match[i*5+j][6], "count": result_match[i*5+j][4]})
+        heroes.append({"id": hero_id, "name": hero_name, "top_purchases": item_dict})
+
+    dict["heroes"] = heroes
+
+    cursor.close()
+    conn.close()
+
+    return JsonResponse(dict)
+
+def abilities (request):
+
+    conn = psycopg2.connect(
+        database=os.environ.get('DBS_NAME'),
+        user=os.environ.get('DBS_USERNAME'),
+        host=os.environ.get('DBS_HOST'),
+        password=os.environ.get('DBS_PASSWORD'),
+        port=os.environ.get('DBS_PORT'),
+    )
+
+    cursor = conn.cursor()
+
+    cursor.execute("")
+    result_ability = cursor.fetchall()
+
+
+
+    dictionary = {}
+    cursor.close()
+    conn.close()
+
+    return JsonResponse(dictionary)
