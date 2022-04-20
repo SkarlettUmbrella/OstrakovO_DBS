@@ -123,7 +123,7 @@ def matches (request, id):
 
     return JsonResponse(dict)
 
-def abilities (request):
+def towerkills (request):
 
     conn = psycopg2.connect(
         database=os.environ.get('DBS_NAME'),
@@ -135,12 +135,17 @@ def abilities (request):
 
     cursor = conn.cursor()
 
-    cursor.execute("")
-    result_ability = cursor.fetchall()
-
-
+    cursor.execute("SELECT hero_id, localized_name, max(count) FROM (SELECT hero_id, localized_name, match_id, count(*) FROM (SELECT hero_id, localized_name, match_id, isstart, SUM (CASE WHEN isstart = 1 THEN 1 ELSE 0 END) OVER (ORDER BY sub3.RN) AS SeriaId FROM(SELECT *, CASE WHEN hero_id != prev_hero or prev_hero is null THEN 1 ELSE 0 END AS IsStart FROM (SELECT ROW_NUMBER () OVER (ORDER BY obj_id) AS RN, hero_id, localized_name, match_id, lag (hero_id) OVER (ORDER BY obj_id) prev_hero FROM (SELECT go.id obj_id, h.id hero_id, h.localized_name, mpd.id mpd_id, mpd.match_id, go.subtype FROM heroes h, matches_players_details mpd, game_objectives go WHERE h.id = mpd.hero_id and mpd.id = go.match_player_detail_id_1  and go.subtype = 'CHAT_MESSAGE_TOWER_KILL') sub ) sub2 ) sub3 ) sub4 GROUP BY hero_id, localized_name, match_id, sub4.seriaid) sub5 GROUP BY hero_id, localized_name ORDER BY max DESC")
+    result_max_towers = cursor.fetchall()
 
     dictionary = {}
+
+    heroes = []
+
+    for i in result_max_towers:
+        heroes.append({"id": i[0], "name": i[1], "tower_kills": i[2]})
+    dictionary["heroes"] = heroes
+
     cursor.close()
     conn.close()
 
