@@ -57,3 +57,6 @@ SELECT
 		GROUP BY hero_id, localized_name, match_id, sub4.seriaid) sub5
 	GROUP BY hero_id, localized_name
 	ORDER BY max DESC
+
+
+v4: completed migration, not implemented v4 functions
